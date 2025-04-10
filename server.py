@@ -10,7 +10,7 @@ from pydantic import BaseModel
 import subprocess
 from s3fs import S3FileSystem
 from omegaconf import OmegaConf
-from scripts.inference import main
+
 from types import SimpleNamespace
 
 # Environment variables
