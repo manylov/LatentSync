@@ -116,9 +116,9 @@ async def generate(
 
     try:
         # Generate unique ID for this request
-        # Extract filename from video URL without extension
-        video_filename = os.path.basename(request.video)
-        request_id = os.path.splitext(video_filename)[0]
+        # Extract identifier from the full URL path
+        video_url_parts = request.video.split('/')
+        request_id = video_url_parts[-1].split('.')[0]  # Get the filename without extension
         logger.info(f"Processing request with ID: {request_id}")
         
         # Create assets directory if it doesn't exist
