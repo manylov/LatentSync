@@ -174,4 +174,11 @@ async def generate(
 if __name__ == "__main__":
     import uvicorn
     logger.info("Starting server on 0.0.0.0:8081")
-    uvicorn.run(app, host="0.0.0.0", port=8081) 
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8081,
+        timeout_keep_alive=300,  # 5 minutes keep-alive timeout
+        timeout_graceful_shutdown=300,  # 5 minutes graceful shutdown
+        limit_concurrency=10,  # Limit concurrent connections
+    ) 
