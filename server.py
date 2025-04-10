@@ -76,7 +76,9 @@ async def generate(
 
     try:
         # Generate unique ID for this request
-        request_id = str(uuid.uuid4())
+        # Extract filename from video URL without extension
+        video_filename = os.path.basename(request.video)
+        request_id = os.path.splitext(video_filename)[0]
         
         # Create assets directory if it doesn't exist
         Path("assets").mkdir(exist_ok=True)
@@ -101,7 +103,7 @@ async def generate(
 
         # Upload to Cloudflare R2
         s3 = setup_s3()
-        s3.put(output_path, f"{R2_BUCKET_NAME}/{request_id}.mp4")
+        s3.put(output_path, f"{R2_BUCKET_NAME}/output/{request_id}.mp4")
 
         # Cleanup local files
         # for file in [video_path, audio_path, output_path]:
