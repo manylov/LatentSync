@@ -126,8 +126,8 @@ async def generate(
         Path("assets").mkdir(exist_ok=True)
         
         # Define file paths
-        video_path = f"assets/{request_id}_video.mp4"
-        audio_path = f"assets/{request_id}_audio.wav"
+        video_path = f"assets/{request_id}.mp4"
+        audio_path = f"assets/{request_id}.wav"
         output_path = f"/tmp/{request_id}.mp4"
         logger.info(f"File paths - Video: {video_path}, Audio: {audio_path}, Output: {output_path}")
 
