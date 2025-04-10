@@ -48,3 +48,5 @@ wandb/
 !/assets/*
 !/docs/*
 !/internal/*.png
+
+run.sh
