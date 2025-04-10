@@ -45,24 +45,33 @@ async def download_file(url: str, path: str):
 
 def run_inference(video_path: str, audio_path: str, output_path: str):
     try:
-        # Create args namespace with the same parameters as CLI
-        args = SimpleNamespace(
-            unet_config_path='configs/unet/stage2.yaml',
-            inference_ckpt_path='checkpoints/latentsync_unet.pt',
-            inference_steps=20,
-            guidance_scale=1.5,
-            video_path=video_path,
-            audio_path=audio_path,
-            video_out_path=output_path,
-            seed=1247  # Using default from inference.py
+        # Spawn subprocess similar to inference.sh
+        cmd = [
+            "python", "-m", "scripts.inference",
+            "--unet_config_path", "configs/unet/stage2.yaml",
+            "--inference_ckpt_path", "checkpoints/latentsync_unet.pt",
+            "--inference_steps", "20",
+            "--guidance_scale", "1.5",
+            "--video_path", video_path,
+            "--audio_path", audio_path,
+            "--video_out_path", output_path,
+            "--seed", "1247"
+        ]
+        
+        # Run the subprocess and capture output
+        process = subprocess.run(
+            cmd,
+            check=True,  # This will raise CalledProcessError if the process fails
+            capture_output=True,  # Capture stdout and stderr
+            text=True  # Convert output to string
         )
         
-        # Load config
-        config = OmegaConf.load(args.unet_config_path)
-        
-        # Call main directly
-        main(config, args)
+    except subprocess.CalledProcessError as e:
+        # Handle subprocess execution errors
+        error_msg = f"Inference process failed with exit code {e.returncode}.\nStdout: {e.stdout}\nStderr: {e.stderr}"
+        raise RuntimeError(error_msg)
     except Exception as e:
+        # Handle any other errors
         raise RuntimeError(f"Inference failed: {str(e)}")
 
 @app.post("/generate")
@@ -84,31 +93,31 @@ async def generate(
         Path("assets").mkdir(exist_ok=True)
         
         # Define file paths
-        # video_path = f"assets/{request_id}_video.mp4"
-        # audio_path = f"assets/{request_id}_audio.wav"
-        # output_path = f"/tmp/{request_id}.mp4"
+        video_path = f"assets/{request_id}_video.mp4"
+        audio_path = f"assets/{request_id}_audio.wav"
+        output_path = f"/tmp/{request_id}.mp4"
 
-        video_path = f"assets/demo1_video.mp4"
-        audio_path = f"assets/demo1_audio.wav"
-        output_path = f"assets/demo3_video.mp4"
+        # video_path = f"assets/demo1_video.mp4"
+        # audio_path = f"assets/demo1_audio.wav"
+        # output_path = f"assets/demo3_video.mp4"
 
         # Download files
-        # await asyncio.gather(
-        #     download_file(request.video, video_path),
-        #     download_file(request.audio, audio_path)
-        # )
+        await asyncio.gather(
+            download_file(request.video, video_path),
+            download_file(request.audio, audio_path)
+        )
 
         # Run inference
-        # run_inference(video_path, audio_path, output_path)
+        run_inference(video_path, audio_path, output_path)
 
         # Upload to Cloudflare R2
         s3 = setup_s3()
         s3.put(output_path, f"{R2_BUCKET_NAME}/output/{request_id}.mp4")
 
         # Cleanup local files
-        # for file in [video_path, audio_path, output_path]:
-        #     if os.path.exists(file):
-        #         os.remove(file)
+        for file in [video_path, audio_path, output_path]:
+            if os.path.exists(file):
+                os.remove(file)
 
         return {"output": f"{request_id}.mp4"}
 
