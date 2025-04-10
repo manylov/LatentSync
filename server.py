@@ -80,21 +80,35 @@ def run_inference(video_path: str, audio_path: str, output_path: str):
         
         logger.info(f"Executing command: {' '.join(cmd)}")
         
-        # Run the subprocess and capture output
-        process = subprocess.run(
+        # Run the subprocess with real-time output streaming
+        process = subprocess.Popen(
             cmd,
-            check=True,  # This will raise CalledProcessError if the process fails
-            capture_output=True,  # Capture stdout and stderr
-            text=True  # Convert output to string
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
         )
+        
+        # Stream the output in real-time
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                logger.info(f"Inference: {output.strip()}")
+        
+        # Wait for the process to complete and check return code
+        return_code = process.wait()
+        if return_code != 0:
+            raise subprocess.CalledProcessError(return_code, cmd)
         
         inference_time = time.time() - start_time
         logger.info(f"Inference completed successfully in {inference_time:.2f} seconds")
-        logger.debug(f"Inference stdout: {process.stdout}")
         
     except subprocess.CalledProcessError as e:
         # Handle subprocess execution errors
-        error_msg = f"Inference process failed with exit code {e.returncode}.\nStdout: {e.stdout}\nStderr: {e.stderr}"
+        error_msg = f"Inference process failed with exit code {e.returncode}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
     except Exception as e:
